@@ -1,0 +1,6 @@
+.git
+.github
+axis
+docs
+node_modules
+**/*.log
