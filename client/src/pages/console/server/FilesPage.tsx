@@ -102,106 +102,25 @@ export default function FilesPage() {
             {can('file.create') && <Button variant="ghost" onClick={() => setModals(m => ({ ...m, newFile: true }))} className="shrink-0"><Icons.filePlus className="h-4 w-4" /></Button>}
             <input ref={fm.uploadInputRef} type="file" multiple className="hidden" onChange={e => { if (e.target.files?.length) setModals(m => ({ ...m, upload: true, initialFiles: e.target.files })); }} />
             {can('file.upload') && <Button onClick={() => fm.uploadInputRef.current?.click()} className="shrink-0"><Icons.arrowUp className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Upload</span></Button>}
-            {can('file.copy') && fm.clipboard.length > 0 && <Button onClick={fm.actions.paste} disabled={fm.pasting} loading={fm.pasting} className="shrink-0"><Icons.clipboardCheck className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">{fm.pasting ? 'Pasting...' : 'Paste'}</span></Button>}
+            
+            
+            {can('file.copy') && fm.clipboard.length > 0 && 
+              <Button onClick={fm.actions.paste} 
+                      disabled={!!fm.pasting} 
+                      loading={!!fm.pasting} 
+                      className="shrink-0">
+                <Icons.clipboardCheck className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">{fm.pasting ? 'Pasting...' : 'Paste'}</span>
+              </Button>
+            }
           </div>
         </div>
       </div>
 
+      
       <div className="bg-neutral-900/40 rounded-lg border border-neutral-800 overflow-hidden">
-        <div className="hidden md:block">
-          <table className="min-w-full">
-            <thead className="bg-neutral-900/50">
-              <tr>
-                <th className="w-10 pl-4 py-3"><Checkbox checked={fm.allSelected} indeterminate={fm.someSelected} onChange={fm.toggleAll} /></th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Name</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-neutral-500 uppercase w-24">Size</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-neutral-500 uppercase w-36">Modified</th>
-                <th className="w-12 px-3 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-800">
-              {fm.loading ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-500">Loading...</td></tr>
-              ) : fm.searchResults ? (
-                fm.searchResults.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-500">No results found</td></tr>
-                ) : fm.searchResults.map(result => (
-                  <tr key={result.path} className="hover:bg-neutral-800/50 cursor-pointer" onClick={() => fm.navigateToSearchResult(result)}>
-                    <td className="pl-4 py-3"></td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-3">
-                        <FileIcon name={result.name} is_dir={result.is_dir} />
-                        <div className="min-w-0">
-                          <div className="text-sm text-neutral-100 truncate">{result.name}</div>
-                          <div className="text-xs text-neutral-500 truncate">{result.path}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-sm text-neutral-400">{result.is_dir ? '—' : formatBytes(result.size)}</td>
-                    <td className="px-3 py-3 text-sm text-neutral-400">{formatDate(result.mod_time)}</td>
-                    <td className="px-3 py-3"><Button variant="ghost" onClick={e => openSearchContextMenu(e, result)}><Icons.ellipsis className="w-5 h-5" /></Button></td>
-                  </tr>
-                ))
-              ) : fm.files.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-500">No files found</td></tr>
-              ) : fm.files.map(file => (
-                <tr key={file.name} className={`hover:bg-neutral-800/50 cursor-pointer ${fm.selected.has(file.name) ? 'bg-neutral-800/30' : ''}`} onClick={() => fm.navigateTo(file)}>
-                  <td className="pl-4 py-3" onClick={e => e.stopPropagation()}>{file.name !== '..' && <Checkbox checked={fm.selected.has(file.name)} onChange={() => fm.toggleSelect(file.name)} />}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-3">
-                      <FileIcon name={file.name} is_dir={file.is_dir} />
-                      <span className="text-sm text-neutral-100 truncate">{file.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-sm text-neutral-400">{file.is_dir ? '—' : formatBytes(file.size)}</td>
-                  <td className="px-3 py-3 text-sm text-neutral-400">{formatDate(file.mod_time)}</td>
-                  <td className="px-3 py-3"><Button variant="ghost" onClick={e => openContextMenu(e, file)} className={file.name === '..' ? 'invisible' : ''}><Icons.ellipsis className="w-5 h-5" /></Button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="md:hidden divide-y divide-neutral-800">
-          {fm.loading ? (
-            <div className="px-4 py-8 text-center text-sm text-neutral-500">Loading...</div>
-          ) : fm.searchResults ? (
-            fm.searchResults.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-neutral-500">No results found</div>
-            ) : fm.searchResults.map(result => (
-              <div key={result.path} className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-800/50 active:bg-neutral-800/70" onClick={() => fm.navigateToSearchResult(result)}>
-                <FileIcon name={result.name} is_dir={result.is_dir} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-neutral-100 truncate">{result.name}</div>
-                  <div className="text-xs text-neutral-500">{result.is_dir ? 'Folder' : formatBytes(result.size)}</div>
-                </div>
-                <Button variant="ghost" onClick={e => { e.stopPropagation(); openSearchContextMenu(e, result); }}><Icons.ellipsis className="w-5 h-5" /></Button>
-              </div>
-            ))
-          ) : fm.files.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-neutral-500">No files found</div>
-          ) : fm.files.map(file => (
-            <div 
-              key={file.name} 
-              className={`flex items-center gap-3 px-4 py-3 hover:bg-neutral-800/50 active:bg-neutral-800/70 ${fm.selected.has(file.name) ? 'bg-neutral-800/30' : ''}`} 
-              onClick={() => fm.navigateTo(file)}
-            >
-              {file.name !== '..' && (
-                <div onClick={e => e.stopPropagation()}>
-                  <Checkbox checked={fm.selected.has(file.name)} onChange={() => fm.toggleSelect(file.name)} />
-                </div>
-              )}
-              <FileIcon name={file.name} is_dir={file.is_dir} />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm text-neutral-100 truncate">{file.name}</div>
-                <div className="text-xs text-neutral-500">{file.is_dir ? 'Folder' : formatBytes(file.size)}</div>
-              </div>
-              {file.name !== '..' && (
-                <Button variant="ghost" onClick={e => { e.stopPropagation(); openContextMenu(e, file); }}><Icons.ellipsis className="w-5 h-5" /></Button>
-              )}
-            </div>
-          ))}
-        </div>
+        {/* Table & mobile views */}
+        
       </div>
 
       <CreateFolderModal open={modals.newFolder} onClose={() => setModals(m => ({ ...m, newFolder: false }))} onCreate={async n => { await fm.actions.createFolder(n); setModals(m => ({ ...m, newFolder: false })); }} />
