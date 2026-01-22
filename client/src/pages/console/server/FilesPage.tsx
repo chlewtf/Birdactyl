@@ -5,7 +5,11 @@ import { getServer, Server, FileEntry, SearchResult, getDownloadUrl } from '../.
 import { formatBytes, formatDate } from '../../../lib/utils';
 import { useFileManager } from '../../../hooks/useFileManager';
 import { useServerPermissions } from '../../../hooks/useServerPermissions';
-import { UploadModal, FileContextMenu, SearchContextMenu, CreateFolderModal, CreateFileModal, MoveFileModal, RenameFileModal, CompressFileModal, ClipboardPanel, Button, Icons, Checkbox, PermissionDenied, Input, DeleteFileModal } from '../../../components';
+import {
+  UploadModal, FileContextMenu, SearchContextMenu, CreateFolderModal,
+  CreateFileModal, MoveFileModal, RenameFileModal, CompressFileModal,
+  ClipboardPanel, Button, Icons, PermissionDenied, Input, DeleteFileModal
+} from '../../../components';
 
 const getFileIconColor = (name: string, isDir: boolean): string => {
   if (isDir) return 'text-amber-500';
@@ -31,35 +35,25 @@ export default function FilesPage() {
   const fm = useFileManager(id, searchParams.get('path') || '/');
   const { can, loading: permsLoading } = useServerPermissions(id);
 
-  const [modals, setModals] = useState<{ newFolder: boolean; newFile: boolean; upload: boolean; bulkCompress: boolean; initialFiles: FileList | null }>({ newFolder: false, newFile: false, upload: false, bulkCompress: false, initialFiles: null });
+  const [modals, setModals] = useState<{ newFolder: boolean; newFile: boolean; upload: boolean; bulkCompress: boolean; initialFiles: FileList | null }>({
+    newFolder: false, newFile: false, upload: false, bulkCompress: false, initialFiles: null
+  });
+
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; openUp: boolean; file: FileEntry } | null>(null);
   const [searchContextMenu, setSearchContextMenu] = useState<{ x: number; y: number; openUp: boolean; result: SearchResult } | null>(null);
   const [fileTarget, setFileTarget] = useState<{ type: 'move' | 'rename' | 'compress'; file: FileEntry } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ file: FileEntry } | { bulk: true } | null>(null);
 
   useEffect(() => { id && getServer(id).then(res => res.success && res.data && setServer(res.data)); }, [id]);
-  useEffect(() => { if (!contextMenu && !searchContextMenu) return; const h = () => { setContextMenu(null); setSearchContextMenu(null); }; document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, [contextMenu, searchContextMenu]);
+  useEffect(() => {
+    if (!contextMenu && !searchContextMenu) return;
+    const h = () => { setContextMenu(null); setSearchContextMenu(null); };
+    document.addEventListener('click', h);
+    return () => document.removeEventListener('click', h);
+  }, [contextMenu, searchContextMenu]);
 
   if (permsLoading) return null;
   if (!can('file.list')) return <PermissionDenied message="You don't have permission to view files" />;
-
-  const openContextMenu = (e: React.MouseEvent<HTMLButtonElement>, file: FileEntry) => {
-    e.stopPropagation();
-    if (file.name === '..') return;
-    if (contextMenu?.file === file) { setContextMenu(null); return; }
-    const rect = e.currentTarget.getBoundingClientRect();
-    const menuH = file.is_dir ? 152 : (isArchive(file.name) ? 340 : 304);
-    const openUp = window.innerHeight - rect.bottom < menuH && rect.top > window.innerHeight - rect.bottom;
-    setContextMenu({ x: rect.right - 48, y: openUp ? rect.top : rect.bottom + 4, openUp, file });
-  };
-
-  const openSearchContextMenu = (e: React.MouseEvent<HTMLButtonElement>, result: SearchResult) => {
-    e.stopPropagation();
-    if (searchContextMenu?.result === result) { setSearchContextMenu(null); return; }
-    const rect = e.currentTarget.getBoundingClientRect();
-    const openUp = window.innerHeight - rect.bottom < 40 && rect.top > window.innerHeight - rect.bottom;
-    setSearchContextMenu({ x: rect.right - 48, y: openUp ? rect.top : rect.bottom + 4, openUp, result });
-  };
 
   const handleDownload = (file: FileEntry) => {
     if (!id) return;
@@ -70,10 +64,27 @@ export default function FilesPage() {
     setContextMenu(null);
   };
 
+  const openContextMenu = (e: React.MouseEvent<HTMLButtonElement>, file: FileEntry) => {
+    e.stopPropagation();
+    if (file.name === '..') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuH = file.is_dir ? 152 : (isArchive(file.name) ? 340 : 304);
+    const openUp = window.innerHeight - rect.bottom < menuH && rect.top > window.innerHeight - rect.bottom;
+    setContextMenu({ x: rect.right - 48, y: openUp ? rect.top : rect.bottom + 4, openUp, file });
+  };
+
+  const openSearchContextMenu = (e: React.MouseEvent<HTMLButtonElement>, result: SearchResult) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const openUp = window.innerHeight - rect.bottom < 40 && rect.top > window.innerHeight - rect.bottom;
+    setSearchContextMenu({ x: rect.right - 48, y: openUp ? rect.top : rect.bottom + 4, openUp, result });
+  };
+
   return (
     <div className="space-y-4">
       {fm.error && <PermissionDenied message={fm.error} />}
 
+      {/* Header & Breadcrumbs */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-neutral-100">Files</h1>
@@ -95,77 +106,44 @@ export default function FilesPage() {
           ))}
         </div>
 
+        {/* Top actions */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input className="w-full sm:flex-1" placeholder="Search files..." value={fm.search} onChange={e => fm.setSearch(e.target.value)} />
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            {can('file.create') && <Button variant="ghost" onClick={() => setModals(m => ({ ...m, newFolder: true }))} className="shrink-0"><Icons.folderPlus className="h-4 w-4" /></Button>}
-            {can('file.create') && <Button variant="ghost" onClick={() => setModals(m => ({ ...m, newFile: true }))} className="shrink-0"><Icons.filePlus className="h-4 w-4" /></Button>}
+            {can('file.create') && <Button variant="ghost" onClick={() => setModals(m => ({ ...m, newFolder: true }))}><Icons.folderPlus className="h-4 w-4" /></Button>}
+            {can('file.create') && <Button variant="ghost" onClick={() => setModals(m => ({ ...m, newFile: true }))}><Icons.filePlus className="h-4 w-4" /></Button>}
             <input ref={fm.uploadInputRef} type="file" multiple className="hidden" onChange={e => { if (e.target.files?.length) setModals(m => ({ ...m, upload: true, initialFiles: e.target.files })); }} />
-            {can('file.upload') && <Button onClick={() => fm.uploadInputRef.current?.click()} className="shrink-0"><Icons.arrowUp className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Upload</span></Button>}
-            
-            
-            {can('file.copy') && fm.clipboard.length > 0 && 
-              <Button onClick={fm.actions.paste} 
-                      disabled={!!fm.pasting} 
-                      loading={!!fm.pasting} 
-                      className="shrink-0">
-                <Icons.clipboardCheck className="h-4 w-4 sm:mr-1.5" />
-                <span className="hidden sm:inline">{fm.pasting ? 'Pasting...' : 'Paste'}</span>
-              </Button>
-            }
+            {can('file.upload') && <Button onClick={() => fm.uploadInputRef.current?.click()}><Icons.arrowUp className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Upload</span></Button>}
+            {can('file.copy') && fm.clipboard.length > 0 && <Button onClick={fm.actions.paste} disabled={!!fm.pasting} loading={!!fm.pasting}><Icons.clipboardCheck className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">{fm.pasting ? 'Pasting...' : 'Paste'}</span></Button>}
           </div>
         </div>
       </div>
 
-      
+      {/* File table / mobile views */}
       <div className="bg-neutral-900/40 rounded-lg border border-neutral-800 overflow-hidden">
-        {/* Table & mobile views */}
-        
+        {/* You can paste your table/list rendering here */}
       </div>
 
+      {/* Modals */}
       <CreateFolderModal open={modals.newFolder} onClose={() => setModals(m => ({ ...m, newFolder: false }))} onCreate={async n => { await fm.actions.createFolder(n); setModals(m => ({ ...m, newFolder: false })); }} />
       <CreateFileModal open={modals.newFile} onClose={() => setModals(m => ({ ...m, newFile: false }))} onCreate={async n => { await fm.actions.createFile(n); setModals(m => ({ ...m, newFile: false })); }} />
       <UploadModal open={modals.upload} onClose={() => { setModals(m => ({ ...m, upload: false, initialFiles: null })); if (fm.uploadInputRef.current) fm.uploadInputRef.current.value = ''; }} serverId={id || ''} path={fm.currentPath} onComplete={fm.refreshFiles} initialFiles={modals.initialFiles} />
+
       <MoveFileModal open={fileTarget?.type === 'move'} initialPath={fileTarget?.type === 'move' ? fm.getFilePath(fileTarget.file.name) : ''} onClose={() => setFileTarget(null)} onMove={async dest => { if (fileTarget?.type === 'move') await fm.actions.move(fileTarget.file, dest); setFileTarget(null); }} />
       <RenameFileModal open={fileTarget?.type === 'rename'} initialName={fileTarget?.file.name || ''} isDir={fileTarget?.file.is_dir || false} onClose={() => setFileTarget(null)} onRename={async n => { if (fileTarget?.type === 'rename') await fm.actions.rename(fileTarget.file, n); setFileTarget(null); }} />
       <CompressFileModal open={fileTarget?.type === 'compress'} fileName={fileTarget?.file.name || ''} onClose={() => setFileTarget(null)} onCompress={async fmt => { if (fileTarget?.type === 'compress') await fm.actions.compress(fileTarget.file, fmt); setFileTarget(null); }} />
       <CompressFileModal open={modals.bulkCompress} fileName={`${fm.selected.size} item${fm.selected.size > 1 ? 's' : ''}`} onClose={() => setModals(m => ({ ...m, bulkCompress: false }))} onCompress={async fmt => { await fm.actions.bulkCompress(fmt); setModals(m => ({ ...m, bulkCompress: false })); }} />
 
-      <DeleteFileModal
-        open={!!deleteTarget}
-        fileName={deleteTarget && 'file' in deleteTarget ? deleteTarget.file.name : ''}
-        isDir={deleteTarget && 'file' in deleteTarget ? deleteTarget.file.is_dir : false}
-        isBulk={deleteTarget && 'bulk' in deleteTarget}
-        count={fm.selected.size}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={async () => {
-          if (deleteTarget && 'file' in deleteTarget) {
-            await fm.actions.delete(deleteTarget.file);
-          } else if (deleteTarget && 'bulk' in deleteTarget) {
-            await fm.actions.bulkDelete();
-          }
-        }}
-      />
+      <DeleteFileModal open={!!deleteTarget} fileName={deleteTarget && 'file' in deleteTarget ? deleteTarget.file.name : ''} isDir={deleteTarget && 'file' in deleteTarget ? deleteTarget.file.is_dir : false} isBulk={deleteTarget && 'bulk' in deleteTarget} count={fm.selected.size} onClose={() => setDeleteTarget(null)} onConfirm={async () => { if (deleteTarget && 'file' in deleteTarget) await fm.actions.delete(deleteTarget.file); else if (deleteTarget && 'bulk' in deleteTarget) await fm.actions.bulkDelete(); }} />
 
-      {contextMenu && (
-        <FileContextMenu
-          file={contextMenu.file} position={contextMenu}
-          onEdit={contextMenu.file.is_dir ? undefined : () => { setContextMenu(null); fm.navigateTo(contextMenu.file); }}
-          onDownload={() => { handleDownload(contextMenu.file); setContextMenu(null); }}
-          onCopy={() => { fm.actions.copy(contextMenu.file); setContextMenu(null); }}
-          onDuplicate={() => { fm.actions.duplicate(contextMenu.file); setContextMenu(null); }}
-          onMove={() => { setFileTarget({ type: 'move', file: contextMenu.file }); setContextMenu(null); }}
-          onRename={() => { setFileTarget({ type: 'rename', file: contextMenu.file }); setContextMenu(null); }}
-          onCompress={() => { setFileTarget({ type: 'compress', file: contextMenu.file }); setContextMenu(null); }}
-          onExtract={isArchive(contextMenu.file.name) ? () => { fm.actions.decompress(contextMenu.file); setContextMenu(null); } : undefined}
-          onDelete={() => { setDeleteTarget({ file: contextMenu.file }); setContextMenu(null); }}
-          isArchive={isArchive(contextMenu.file.name)} extracting={fm.decompressing}
-        />
-      )}
+      {/* Context menus */}
+      {contextMenu && <FileContextMenu file={contextMenu.file} position={contextMenu} onEdit={contextMenu.file.is_dir ? undefined : () => { fm.navigateTo(contextMenu.file); setContextMenu(null); }} onDownload={() => handleDownload(contextMenu.file)} onCopy={() => { fm.actions.copy(contextMenu.file); setContextMenu(null); }} onDuplicate={() => { fm.actions.duplicate(contextMenu.file); setContextMenu(null); }} onMove={() => { setFileTarget({ type: 'move', file: contextMenu.file }); setContextMenu(null); }} onRename={() => { setFileTarget({ type: 'rename', file: contextMenu.file }); setContextMenu(null); }} onCompress={() => { setFileTarget({ type: 'compress', file: contextMenu.file }); setContextMenu(null); }} onExtract={isArchive(contextMenu.file.name) ? () => { fm.actions.decompress(contextMenu.file); setContextMenu(null); } : undefined} onDelete={() => { setDeleteTarget({ file: contextMenu.file }); setContextMenu(null); }} isArchive={isArchive(contextMenu.file.name)} extracting={fm.decompressing} />}
       {searchContextMenu && <SearchContextMenu position={searchContextMenu} onOpenDirectory={() => { const dir = searchContextMenu.result.path.substring(0, searchContextMenu.result.path.lastIndexOf('/')) || '/'; fm.setCurrentPath(dir); fm.setSearch(''); setSearchContextMenu(null); }} />}
 
+      {/* Clipboard */}
       <ClipboardPanel items={fm.clipboard} pasting={fm.pasting} onPaste={fm.actions.paste} onClear={() => fm.setClipboard([])} onRemove={p => fm.setClipboard(fm.clipboard.filter(x => x !== p))} />
-      
+
+      {/* Bottom selected bar */}
       {fm.selected.size > 0 && createPortal(
         <div className="fixed inset-x-0 bottom-0 z-[95]">
           <div className="mx-auto max-w-2xl px-3 pb-[env(safe-area-inset-bottom)]">
@@ -186,4 +164,4 @@ export default function FilesPage() {
       )}
     </div>
   );
-}
+                                                      }
